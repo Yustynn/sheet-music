@@ -68,24 +68,25 @@ export default class App extends Component<{}> {
     socket.on('data', (data) => {
       if (data == this.state.prevData) return;
       if (i++ % 200 == 0) console.log(data, Date.now());
-      const notes = getNotesFromData(data);
+      let notes = getNotesFromData(data);
+
+      try {
+        if (notes.length && Array.isArray(notes[0])) {
+          notes = notes[0]
+          console.log('adjusted notes to be 0th child');
+        }
+      }
+      catch (e) {
+        console.log('failed to adjust notes to 0th child');
+      }
 
       this.setState((prevState) => {
         const oldNotes = prevState.notes;
-        const filteredNotes = []
-        for (const note of notes) {
-          if (!oldNotes.includes(note)) {
-            filteredNotes.push(notes);
-          }
-        }
+        const filteredNotes = notes.filter( (n) => !oldNotes.includes(n) )
         if (filteredNotes.length) {
-          console.log(filteredNotes);
           try {
-            const note = filteredNotes[0][0];
-            console.log('Trying to play note', note);
-            //this.play(...filteredNotes)();
-            //this.play(note)();
-            this.play(...filteredNotes[0])();
+            this.play(...filteredNotes)();
+            return { notes }
           }
           catch (e) {
             console.log(e)
