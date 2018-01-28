@@ -30,7 +30,7 @@ const loadSound = (filename) => new Sound(filename, Sound.MAIN_BUNDLE, (error) =
 });
 
 const ukulele = {}
-for (let f = 0; f < 4; f++) {
+for (let f = 0; f <= 4; f++) {
   for (let s = 1; s <= 4; s++) {
     ukulele[`s${s}f${f}`] = loadSound(`ukulele_s${s}f${f}.wav`);
   }
@@ -62,7 +62,6 @@ const getNotesFromData = (data) => {
   else if (instrument == ukulele) {
     const isPressed = data[0]
     data = data.slice(1);
-    console.log(isPressed)
 
     const strings = {}
 
@@ -81,12 +80,10 @@ const getNotesFromData = (data) => {
         }
       }
     }
-    console.log(strings)
 
     for (let strNum in strings) {
       const note = ukulele[ `s${strNum}f${strings[strNum]}` ];
       notes.push(note);
-      console.log(note)
     }
   }
 
@@ -154,7 +151,6 @@ export default class App extends Component<{}> {
             console.log('successfully finished playing');
           } else {
             console.log('playback failed due to audio decoding errors');
-            sound.reset();
           }
         });
 
