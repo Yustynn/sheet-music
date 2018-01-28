@@ -30,7 +30,7 @@ const loadSound = (filename) => new Sound(filename, Sound.MAIN_BUNDLE, (error) =
 });
 
 const ukulele = {}
-for (let f = 0; f < 2; f++) {
+for (let f = 0; f < 4; f++) {
   for (let s = 1; s <= 4; s++) {
     ukulele[`s${s}f${f}`] = loadSound(`ukulele_s${s}f${f}.wav`);
   }
@@ -44,21 +44,54 @@ for (let i=0; i < noteNames.length; i++) {
   piano[note] = loadSound(`piano_${note}.wav`);
 }
 
-const instruments = { piano, ukulele }
+const instruments = { piano, guitar: ukulele }
 
 const getNotesFromData = (data) => {
   data = data.split('/').slice(1);
   if (data.length > 1) {
     data.pop()
   }
-  //const instrument = instruments[data[0]];
-  const instrument = piano;
-  const notes = data.slice(1).map((k) => instrument[k.replace('_', '').toLowerCase()]);
+  const instrument = instruments[data[0]];
+  data = data.slice(1);
+  //const instrument = piano;
+  //
+  let notes = [];
+  if (instrument == piano) {
+    notes = data.map((k) => instrument[k.replace('_', '').toLowerCase()]);
+  }
+  else if (instrument == ukulele) {
+    const isPressed = data[0]
+    data = data.slice(1);
+    console.log(isPressed)
+
+    const strings = {}
+
+    for (let i = 0; i < isPressed.length; i++) {
+      if (isPressed[i] == '1') {
+        strings[i+1] = 0
+      }
+    }
+
+    for (let datum of data) {
+      const strNum = +datum[1];
+      if (strNum in strings) {
+        const fret = +datum[3];
+        if (fret > strings[strNum]) {
+          strings[strNum] = fret
+        }
+      }
+    }
+    console.log(strings)
+
+    for (let strNum in strings) {
+      const note = ukulele[ `s${strNum}f${strings[strNum]}` ];
+      notes.push(note);
+      console.log(note)
+    }
+  }
 
   return notes;
 }
-
-getNotesFromData('/piano/Ab/C/')
 
 let i = 0;
 export default class App extends Component<{}> {
@@ -67,7 +100,7 @@ export default class App extends Component<{}> {
     socket.emit('oi', 'lol')
     socket.on('data', (data) => {
       if (data == this.state.prevData) return;
-      if (i++ % 200 == 0) console.log(data, Date.now());
+      if (i++ % 20 == 0) console.log(data, Date.now());
       let notes = getNotesFromData(data);
 
       try {
@@ -144,8 +177,8 @@ export default class App extends Component<{}> {
 
     return (
       <View style={styles.container}>
-      {piano_buttons}
-       <TouchableOpacity style={styles.button} onPress={this.play(...Object.values(ukulele))}>
+        {piano_buttons}
+        <TouchableOpacity style={styles.button} onPress={this.play(...Object.values(ukulele))}>
           <Text>All</Text>
         </TouchableOpacity>
       </View>
