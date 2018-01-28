@@ -29,6 +29,7 @@ const loadSound = (filename) => new Sound(filename, Sound.MAIN_BUNDLE, (error) =
   }
 });
 
+// LOAD UKULELE SOUNDS (yes, that's spelt correctly)
 const ukulele = {}
 for (let f = 0; f <= 4; f++) {
   for (let s = 1; s <= 4; s++) {
@@ -36,30 +37,73 @@ for (let f = 0; f <= 4; f++) {
   }
 }
 
+// LOAD PIANOS SOUNDS
 const piano = {}
-const noteNames = ['Ab', 'A', 'Bb', 'B', 'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G'];
+const piano2 = {}
+const pianoNoteNames = ['Ab', 'A', 'Bb', 'B', 'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G'];
 
-for (let i=0; i < noteNames.length; i++) {
-  const note = noteNames[i].toLowerCase();
+for (let i=0; i < pianoNoteNames.length; i++) {
+  const note = pianoNoteNames[i].toLowerCase();
   piano[note] = loadSound(`piano_${note}.wav`);
+  piano2[note] = loadSound(`piano2_${note}.wav`);
 }
 
-const instruments = { piano, guitar: ukulele }
+// LOAD RECORDER SOUNDS
+const recorder = {}
+const recorderNoteNames = ['c', 'd', 'e', 'f', 'g'];
+for (let note of recorderNoteNames) {
+  recorder[note] = loadSound(`recorder_${note}.wav`);
+}
+
+const instruments = {
+  guitar: ukulele,
+  piano,
+  recorder,
+  two_piano: piano2,
+}
 
 const getNotesFromData = (data) => {
   data = data.split('/').slice(1);
   if (data.length > 1) {
     data.pop()
   }
-  const instrument = instruments[data[0]];
+  const instrument = data[0];
   data = data.slice(1);
-  //const instrument = piano;
-  //
   let notes = [];
-  if (instrument == piano) {
-    notes = data.map((k) => instrument[k.replace('_', '').toLowerCase()]);
+
+  if (instrument == 'piano') {
+    notes = data.map((k) => piano[k.replace('_', '').toLowerCase()]);
   }
-  else if (instrument == ukulele) {
+
+  else if (instrument == 'two_piano') {
+    notes = data.map( (d) => {
+      d = d.toLowerCase();
+      if (d[0] == '_') {
+        return piano[d.slice(1)];
+      }
+      return piano2[d]
+    })
+  }
+
+  else if (instrument == 'recorder') {
+    if (i % 20 == 0) {
+      console.log('recorder mode yo')
+    }
+    const idx = data[0].split('').indexOf('1');
+    if (idx !== -1) {
+      const IDX_NOTE_MAP = {
+        0: 'c',
+        1: 'd',
+        2: 'e',
+        3: 'f',
+        4: 'g'
+      }
+
+      notes.push(recorder[ IDX_NOTE_MAP[idx] ])  
+    }
+  }
+
+  else if (instrument == 'ukulele') {
     const isPressed = data[0]
     data = data.slice(1);
 
@@ -93,7 +137,10 @@ const getNotesFromData = (data) => {
 let i = 0;
 export default class App extends Component<{}> {
   componentWillMount(){
-    const socket = openSocket('192.168.43.109:8080', { transports: ['websocket'] });
+    const socket = openSocket('192.168.43.109:8080', {
+      pingTimeout: 1000,
+      transports: ['websocket'] ,
+    });
     socket.emit('oi', 'lol')
     socket.on('data', (data) => {
       if (data == this.state.prevData) return;
@@ -109,6 +156,10 @@ export default class App extends Component<{}> {
       catch (e) {
         console.log('failed to adjust notes to 0th child');
       }
+      //for (let note of recorderNoteNames) {
+        //recorder[note].stop();
+      //}
+
 
       this.setState((prevState) => {
         const oldNotes = prevState.notes;
